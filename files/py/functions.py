@@ -1,20 +1,15 @@
 # ============ Imports ============
-import sys
 import time
-import pyautogui
 
 
 # ============ Functions ============
 class Functions:
-    # ======== Imports ========
-
     # ======== Functions ========
     # -- Window points --
     @staticmethod
     def selectLeftTop(x, y, button, pressed):
         # ======== Imports ========
         # Packages
-        from pynput import mouse
         # Internal
         from files.py.classes import ConfigData
 
@@ -30,7 +25,6 @@ class Functions:
     def selectRightBottom(x, y, button, pressed):
         # ======== Imports ========
         # Packages
-        from pynput import mouse
         # Internal
         from files.py.classes import ConfigData
 
@@ -42,12 +36,41 @@ class Functions:
         # Stop the listener
         ConfigData.listener_rightBottom.stop()
 
+    @staticmethod
+    def getWindowPoints():
+        # ======== Imports ========
+        # Python
+        import time
+
+        # Internal
+        from files.py.classes import ConfigData
+
+        # Packages
+        from tkinter import messagebox
+
+        # ======== Start of Code ========
+        # Display a notification to tell the user to click on the top left and bottom right corners of the game axes.
+        messagebox.showinfo("Select Game Axes",
+                            "Press OK and left click on the top left and then the bottom right corners of the game axes. Right click to cancel.")
+
+        # Getting the left top
+        ConfigData.listener_leftTop.start()
+        while ConfigData.axis["left_top"] is None:
+            time.sleep(1)
+
+        # Getting the right bottom
+        ConfigData.listener_rightBottom.start()
+        while ConfigData.axis["right_bottom"] is None:
+            time.sleep(1)
+
+        # Printing both
+        print(ConfigData.axis)
+
     # -- Graphwar points --
     @staticmethod
     def selectStartPoint(x, y, button, pressed):
         # ======== Imports ========
         # Packages
-        from pynput import mouse
         # Internal
         from files.py.classes import ConfigData
 
@@ -99,38 +122,32 @@ class Functions:
         # Return the selected point
         return ConfigData.axis['selected_point']
 
-    @staticmethod
-    def getWindowPoints():
-        # ======== Imports ========
-        # Python
-        import time
-
-        # Internal
-        from files.py.classes import ConfigData
-
-        # Packages
-        from tkinter import messagebox
-        from pynput import mouse
-
-        # ======== Start of Code ========
-        # Display a notification to tell the user to click on the top left and bottom right corners of the game axes.
-        messagebox.showinfo("Select Game Axes",
-                            "Press OK and left click on the top left and then the bottom right corners of the game axes. Right click to cancel.")
-
-        # Getting the left top
-        ConfigData.listener_leftTop.start()
-        while ConfigData.axis["left_top"] is None:
-            time.sleep(1)
-
-        # Getting the right bottom
-        ConfigData.listener_rightBottom.start()
-        while ConfigData.axis["right_bottom"] is None:
-            time.sleep(1)
-
-        # Printing both
-        print(ConfigData.axis)
-
     # -- Formula --
+    @staticmethod
+    def calculate_formula_graphwar(point_list):
+        sorted_points = sorted(point_list, key=lambda x: x[0])
+        start = point_list[0]
+        x1, y1 = start[0], 0
+        result = ""
+
+        def normalize(x):
+            return str(x) if "-" in str(x) else "+" + str(x)
+
+        for point in point_list[1:]:
+            x2, y2 = point[0], point[1] - start[1]
+            if x2 == x1:  # jump discontinuity, skip to get a jump
+                raise Exception("bad thing happen")
+            else:
+                slope = (y2 - y1) / (x2 - x1)
+                result += "+(1/(1+exp(-1000*(x{0})))-1/(1+exp(-1000*(x{1}))))*({2}*x{3})".format(normalize(round(-x1)),
+                                                                                                 normalize(round(-x2)),
+                                                                                                 str(round(-slope, 3)),
+                                                                                                 normalize(round(
+                                                                                                     -(y1 - slope * x1),
+                                                                                                     3)))  # add a line segment with correct slope
+            x1, y1 = x2, y2
+        result = result[1:] + "+0.1*sin(60*x)"  # remove the leading plus sign
+        return result
 
     # -- GraphWar --
     @staticmethod
@@ -171,12 +188,15 @@ class Functions:
 
             # ==== Start of Code ====
             # Normalize the point
-            next_point = (next_point[0] - ConfigData.axis["left_top"][0], next_point[1] - ConfigData.axis["left_top"][1])
+            next_point = (
+                next_point[0] - ConfigData.axis["left_top"][0], next_point[1] - ConfigData.axis["left_top"][1])
 
             if next_point[0] <= current_x:  # left or same as current one, which means jump down
-                points.append((current_x / ConfigData.scale_w - ConfigData.game_w / 2, next_point[1] / ConfigData.scale_h - ConfigData.game_h / 2))
+                points.append((current_x / ConfigData.scale_w - ConfigData.game_w / 2,
+                               next_point[1] / ConfigData.scale_h - ConfigData.game_h / 2))
             else:  # normal line segment
-                points.append((next_point[0] / ConfigData.scale_w - ConfigData.game_w / 2, next_point[1] / ConfigData.scale_h - ConfigData.game_h / 2))
+                points.append((next_point[0] / ConfigData.scale_w - ConfigData.game_w / 2,
+                               next_point[1] / ConfigData.scale_h - ConfigData.game_h / 2))
                 current_x = next_point[0]
 
             # Empty the selected point
@@ -187,7 +207,6 @@ class Functions:
 
         return points
 
-
     # -- Start --
     @staticmethod
     def startGraphWarCheats():
@@ -196,8 +215,6 @@ class Functions:
         from files.py.classes import ConfigData
 
         # Packages
-        from pynput import mouse
-        from tkinter import messagebox
 
         # ======== Declaring Variables ========
         # Window points
@@ -211,6 +228,9 @@ class Functions:
 
         # Start & Enemy points
         points = Functions.gettingGraphwarPoints()
+        print(points)
 
         # ======== Start of Code ========
         # Starting the program
+        output = Functions.calculate_formula_graphwar(points)
+        print(output)

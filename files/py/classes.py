@@ -1,5 +1,3 @@
-# ============ Imports ============
-
 # ============ Data Classes ============
 class ConfigData:
     # ======== Imports ========
