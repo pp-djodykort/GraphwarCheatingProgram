@@ -1,7 +1,6 @@
 # ============ Imports ============
 import time
 
-
 # ============ Functions ============
 class Functions:
     # ======== Functions ========
